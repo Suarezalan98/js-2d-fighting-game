@@ -1,4 +1,4 @@
-// continue video @ https://youtu.be/vyqbNFMDRGQ?t=3723
+// continue video @ https://youtu.be/vyqbNFMDRGQ?t=5542
 
 const canvas = document.querySelector("canvas");
 const c = canvas.getContext("2d");
@@ -8,40 +8,49 @@ canvas.height = 576;
 
 c.fillRect(0, 0, canvas.width, canvas.height);
 
-const gravity = 0.4;
+const gravity = 0.7;
 
 class Sprite {
-  constructor({ position, velocity, color = "red" }) {
+  constructor({ position, velocity, color = "red", offset }) {
     this.position = position;
     this.velocity = velocity;
     this.width = 50;
     this.height = 150;
     this.lastKey;
     this.attackBox = {
-      position: this.position,
+      position: {
+        x: this.position.x,
+        y: this.position.y,
+      },
+      offset,
       width: 100,
       height: 50,
     };
     this.color = color;
     this.isAttacking;
+    this.health = 100;
   }
 
   draw() {
     c.fillStyle = this.color;
     c.fillRect(this.position.x, this.position.y, this.width, this.height);
 
-    //attackBox drawn
-    c.fillStyle = "green";
-    c.fillRect(
-      this.attackBox.position.x,
-      this.attackBox.position.y,
-      this.attackBox.width,
-      this.attackBox.height
-    );
+    //attack box
+    if (this.isAttacking) {
+      c.fillStyle = "green";
+      c.fillRect(
+        this.attackBox.position.x,
+        this.attackBox.position.y,
+        this.attackBox.width,
+        this.attackBox.height
+      );
+    }
   }
 
   update() {
     this.draw();
+    this.attackBox.position.x = this.position.x + this.attackBox.offset.x;
+    this.attackBox.position.y = this.position.y;
 
     this.position.x += this.velocity.x;
     // moves players along the x-axis by adding/subtracting velocity to the sprite's position (which is in a range of 0-1024)
@@ -73,6 +82,10 @@ const playerOne = new Sprite({
     x: 0,
     y: 0,
   },
+  offset: {
+    x: 0,
+    y: 0,
+  },
 });
 
 const playerTwo = new Sprite({
@@ -85,6 +98,10 @@ const playerTwo = new Sprite({
     y: 0,
   },
   color: "blue",
+  offset: {
+    x: -50,
+    y: 0,
+  },
 });
 
 // console.log(playerOne);
@@ -110,6 +127,18 @@ const keys = {
   },
 };
 
+function rectangularCollision({ rectangle1, rectangle2 }) {
+  return (
+    rectangle1.attackBox.position.x + rectangle1.attackBox.width >=
+      rectangle2.position.x &&
+    rectangle1.attackBox.position.x <=
+      rectangle2.position.x + rectangle2.width &&
+    rectangle1.attackBox.position.y + rectangle1.attackBox.height >=
+      rectangle2.position.y &&
+    rectangle1.attackBox.position.y <= rectangle2.position.y + rectangle2.height
+  );
+}
+
 function animate() {
   window.requestAnimationFrame(animate);
   c.fillStyle = "black";
@@ -122,28 +151,42 @@ function animate() {
 
   //playerOne movement
   if (keys.a.pressed && playerOne.lastKey === "a") {
-    playerOne.velocity.x = -2.8;
+    playerOne.velocity.x = -5;
   } else if (keys.d.pressed && playerOne.lastKey === "d") {
-    playerOne.velocity.x = 2.8;
+    playerOne.velocity.x = 5;
   }
   //playerTwo movement
   if (keys.ArrowLeft.pressed && playerTwo.lastKey === "ArrowLeft") {
-    playerTwo.velocity.x = -2.8;
+    playerTwo.velocity.x = -5;
   } else if (keys.ArrowRight.pressed && playerTwo.lastKey === "ArrowRight") {
-    playerTwo.velocity.x = 2.8;
+    playerTwo.velocity.x = 5;
   }
 
-  //detect for collision
+  //detect collision for playerOne
   if (
-    playerOne.attackBox.position.x + playerOne.attackBox.width >=
-      playerTwo.position.x &&
-    playerOne.attackBox.position.x <= playerTwo.position.x + playerTwo.width &&
-    playerOne.attackBox.position.y + playerOne.attackBox.height >=
-      playerTwo.position.y &&
-    playerOne.attackBox.position.y <= playerTwo.position.y + playerTwo.height &&
+    rectangularCollision({
+      rectangle1: playerOne,
+      rectangle2: playerTwo,
+    }) &&
     playerOne.isAttacking
   ) {
-    console.log("hit");
+    playerOne.isAttacking = false;
+    playerTwo.health -= 20;
+    document.querySelector("#playerTwoHealth").style.width =
+      playerTwo.health + "%";
+  }
+  //detect collision for playerTwo
+  if (
+    rectangularCollision({
+      rectangle1: playerTwo,
+      rectangle2: playerOne,
+    }) &&
+    playerTwo.isAttacking
+  ) {
+    playerTwo.isAttacking = false;
+    playerOne.health -= 20;
+    document.querySelector("#playerOneHealth").style.width =
+      playerOne.health + "%";
   }
 }
 
@@ -181,6 +224,9 @@ window.addEventListener("keydown", (event) => {
     case "ArrowUp":
       playerTwo.velocity.y = -13;
       break;
+    case "ArrowDown":
+      playerTwo.isAttacking = true;
+      break;
   }
   // console.log(event.key);
 });
@@ -194,10 +240,10 @@ window.addEventListener("keyup", (event) => {
     case "a":
       keys.a.pressed = false;
       break;
-    case "w":
-      keys.w.pressed = false;
-      lastKey = "w";
-      break;
+    // case "w":
+    //   keys.w.pressed = false;
+    //   lastKey = "w";
+    //   break;
   }
   //playerTwo keys
   switch (event.key) {
