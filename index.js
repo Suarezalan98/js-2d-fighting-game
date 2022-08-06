@@ -1,4 +1,4 @@
-// continue video @ https://youtu.be/vyqbNFMDRGQ?t=5542
+// continue video @ https://youtu.be/vyqbNFMDRGQ?t=8588
 
 const canvas = document.querySelector("canvas");
 const c = canvas.getContext("2d");
@@ -10,70 +10,25 @@ c.fillRect(0, 0, canvas.width, canvas.height);
 
 const gravity = 0.7;
 
-class Sprite {
-  constructor({ position, velocity, color = "red", offset }) {
-    this.position = position;
-    this.velocity = velocity;
-    this.width = 50;
-    this.height = 150;
-    this.lastKey;
-    this.attackBox = {
-      position: {
-        x: this.position.x,
-        y: this.position.y,
-      },
-      offset,
-      width: 100,
-      height: 50,
-    };
-    this.color = color;
-    this.isAttacking;
-    this.health = 100;
-  }
+const background = new Sprite({
+  position: {
+    x: 0,
+    y: 0,
+  },
+  imageSrc: "./assets/background.png",
+});
 
-  draw() {
-    c.fillStyle = this.color;
-    c.fillRect(this.position.x, this.position.y, this.width, this.height);
+const shop = new Sprite({
+  position: {
+    x: 600,
+    y: 128,
+  },
+  imageSrc: "./assets/shop.png",
+  scale: 2.75,
+  framesMax: 6,
+});
 
-    //attack box
-    if (this.isAttacking) {
-      c.fillStyle = "green";
-      c.fillRect(
-        this.attackBox.position.x,
-        this.attackBox.position.y,
-        this.attackBox.width,
-        this.attackBox.height
-      );
-    }
-  }
-
-  update() {
-    this.draw();
-    this.attackBox.position.x = this.position.x + this.attackBox.offset.x;
-    this.attackBox.position.y = this.position.y;
-
-    this.position.x += this.velocity.x;
-    // moves players along the x-axis by adding/subtracting velocity to the sprite's position (which is in a range of 0-1024)
-    this.position.y += this.velocity.y;
-    // moves players along the y-axis by adding/subtracting velocity to the sprite's position (which is in a range of 0-576)
-
-    if (this.position.y + this.height + this.velocity.y >= canvas.height) {
-      this.velocity.y = 0;
-      //   stops players from going below canvas by limiting the y position in pixels to below or equal 576 pixels
-    } else {
-      this.velocity.y += gravity;
-    }
-  }
-
-  attack() {
-    this.isAttacking = true;
-    setTimeout(() => {
-      this.isAttacking = false;
-    }, 100);
-  }
-}
-
-const playerOne = new Sprite({
+const playerOne = new Fighter({
   position: {
     x: 0,
     y: 0,
@@ -88,7 +43,7 @@ const playerOne = new Sprite({
   },
 });
 
-const playerTwo = new Sprite({
+const playerTwo = new Fighter({
   position: {
     x: 400,
     y: 100,
@@ -127,51 +82,14 @@ const keys = {
   },
 };
 
-function rectangularCollision({ rectangle1, rectangle2 }) {
-  return (
-    rectangle1.attackBox.position.x + rectangle1.attackBox.width >=
-      rectangle2.position.x &&
-    rectangle1.attackBox.position.x <=
-      rectangle2.position.x + rectangle2.width &&
-    rectangle1.attackBox.position.y + rectangle1.attackBox.height >=
-      rectangle2.position.y &&
-    rectangle1.attackBox.position.y <= rectangle2.position.y + rectangle2.height
-  );
-}
-
-function determineWinner({ playerOne, playerTwo, timerId }) {
-  clearTimeout(timerId);
-  document.querySelector("#displayText").style.display = "flex";
-  if (playerOne.health === playerTwo.health) {
-    document.querySelector("#displayText").innerHTML = "Tie";
-  } else if (playerOne.health > playerTwo.health) {
-    document.querySelector("#displayText").innerHTML = "Player 1 Wins";
-  } else if (playerTwo.health > playerOne.health) {
-    document.querySelector("#displayText").innerHTML = "Player 2 Wins";
-  }
-}
-
-let timer = 60;
-let timerId;
-function decreaseTimer() {
-  if (timer > 0) {
-    timerId = setTimeout(decreaseTimer, 1000);
-    timer--;
-    document.querySelector("#timer").innerHTML = timer;
-  }
-
-  if (timer === 0) {
-    document.querySelector("#displayText").style.display = "flex";
-    determineWinner({ playerOne, playerOne, timerId });
-  }
-}
-
 decreaseTimer();
 
 function animate() {
   window.requestAnimationFrame(animate);
   c.fillStyle = "black";
   c.fillRect(0, 0, canvas.width, canvas.height);
+  background.update();
+  shop.update();
   playerOne.update();
   playerTwo.update();
 
